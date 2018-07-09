@@ -19,7 +19,7 @@ contract Factory {
     * @return address of the new proxy created
     */
     function createProxy(address version) public payable returns (UpgradeabilityProxy) {
-        UpgradeabilityProxy proxy = new UpgradeabilityProxy(version);
+        UpgradeabilityProxy proxy = new UpgradeabilityProxy(msg.sender, version);
         Upgradeable(proxy).initialize.value(msg.value)(msg.sender);
         emit ProxyCreated(proxy);
         return proxy;

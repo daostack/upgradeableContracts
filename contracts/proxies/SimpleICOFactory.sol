@@ -29,7 +29,7 @@ contract SimpleICOFactory {
         address  _avatar
         ) public payable returns (UpgradeabilityProxy)
     {
-        UpgradeabilityProxy proxy = new UpgradeabilityProxy(version);
+        UpgradeabilityProxy proxy = new UpgradeabilityProxy(msg.sender, version);
         SimpleICOScheme(proxy).initialize(
             msg.sender, _cap, _price, _startBlock, _endBlock, _beneficiary, _admin, _avatar);
         emit ProxyCreated(proxy);

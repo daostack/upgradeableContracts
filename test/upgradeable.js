@@ -37,9 +37,9 @@ contract('Upgradeable', function (accounts) {
     const impl_v1 = await SimpleICO.new();
     const impl_v2 = await SimpleICOV2.new();
 
-    const registry = await Factory.new();
+    const factory = await Factory.new();
 
-     const {logs} = await registry.createProxy(
+     const {logs} = await factory.createProxy(
        impl_v1.address,
        10000,
        1,
@@ -51,14 +51,14 @@ contract('Upgradeable', function (accounts) {
      );
 
     const {proxy} = logs.find(l => l.event === 'ProxyCreated').args;
-
+    
     await daoCreator.setSchemes(testSetup.org.avatar.address,[proxy],[""],["0x00000000"]);
 
-    await SimpleICO.at(proxy).sendTransaction({value: 2});
+    await SimpleICO.at(proxy).sendTransaction({from:accounts[0], value: 2});
 
     await Proxy.at(proxy).upgradeTo(impl_v2.address)
 
-    await SimpleICOV2.at(proxy).donate(accounts[0], {value: 3});
+    await SimpleICOV2.at(proxy).donate(accounts[0], {from:accounts[0], value: 3});
 
     const balance = await testSetup.org.token.balanceOf(accounts[0]);
 

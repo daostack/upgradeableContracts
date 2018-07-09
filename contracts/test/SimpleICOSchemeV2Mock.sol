@@ -12,9 +12,9 @@ contract SimpleICOSchemeV2Mock is SimpleICOScheme {
 
     mapping(address => bool) public donators;
 
-    function donate(Avatar _avatar, address _beneficiary) public payable {
+    function donate(address _beneficiary) public payable {
 
-        super.donate(_avatar, _beneficiary);
+        super.donate(_beneficiary);
 
         if (!donators[msg.sender]) {
             donators[msg.sender] = true;

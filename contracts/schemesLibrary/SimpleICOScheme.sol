@@ -29,12 +29,22 @@ contract SimpleICOScheme is Upgradeable {
     address beneficiary; // all funds received will be transferred to this address.
     address admin; // The admin can halt or resume ICO.
 
+    address avatar;
+
 
     // A mapping from the organization (Avatar) address to the saved data of the organization:
     //mapping(address=>Organization) public organizationsICOInfo;
 
 
     event DonationReceived(address indexed organization, address indexed _beneficiary, uint _incomingEther, uint indexed _tokensAmount);
+
+    function () public payable {
+        // Not to waste gas, if no value.
+        require(msg.value != 0);
+
+        // Return ether if couldn't donate.
+        donate(msg.sender);
+    }
 
     /**
      * @dev Allowing admin to halt an ICO.
@@ -76,11 +86,10 @@ contract SimpleICOScheme is Upgradeable {
      * @dev Donating ethers to get tokens.
      * If the donation is higher than the remaining ethers in the "cap",
      * The donator will get the change in ethers.
-     * @param _avatar The Avatar's of the organization.
      * @param _beneficiary The donator's address - which will receive the ICO's tokens.
      * @return uint number of tokens minted for the donation.
      */
-    function donate(Avatar _avatar, address _beneficiary) public payable {
+    function donate(address _beneficiary) public payable {
 
         // Check ICO is active:
         require(isActive(), "ICO must be active in order to donate");
@@ -107,11 +116,11 @@ contract SimpleICOScheme is Upgradeable {
         // Send ether to the defined address, mint, and send change to beneficiary:
         beneficiary.transfer(incomingEther);
 
-        require(ControllerInterface(_avatar.owner()).mintTokens(tokens, _beneficiary, address(_avatar)));
+        require(ControllerInterface(Avatar(avatar).owner()).mintTokens(tokens, _beneficiary, address(avatar)));
         if (change != 0) {
             _beneficiary.transfer(change);
         }
-        emit DonationReceived(_avatar, _beneficiary, incomingEther, tokens);
+        emit DonationReceived(avatar, _beneficiary, incomingEther, tokens);
         require(tokens != 0, "Tokens should not be 0");
     }
 
@@ -122,12 +131,13 @@ contract SimpleICOScheme is Upgradeable {
         uint _startBlock,
         uint _endBlock,
         address _beneficiary,
-        address _admin
+        address _admin,
+        address _avatar
         ) public payable
     {
         super.initialize(sender);
         _initialize(
-            _cap, _price, _startBlock, _endBlock, _beneficiary, _admin);
+            _cap, _price, _startBlock, _endBlock, _beneficiary, _admin, _avatar);
     }
 
     function _initialize(
@@ -136,7 +146,8 @@ contract SimpleICOScheme is Upgradeable {
         uint _startBlock,
         uint _endBlock,
         address _beneficiary,
-        address _admin)
+        address _admin,
+        address _avatar)
         internal
     {
         cap = _cap;
@@ -145,5 +156,6 @@ contract SimpleICOScheme is Upgradeable {
         endBlock = _endBlock;
         beneficiary = _beneficiary; // all funds received will be transferred to this address.
         admin = _admin;
+        avatar = _avatar;
     }
 }

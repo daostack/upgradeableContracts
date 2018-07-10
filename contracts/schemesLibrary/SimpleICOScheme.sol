@@ -3,9 +3,7 @@ pragma solidity ^0.4.24;
 import '../proxies/Upgradeable.sol';
 import '../controller/Avatar.sol';
 import "../controller/ControllerInterface.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/lifecycle/Destructible.sol";
 
 
 /**
@@ -15,9 +13,6 @@ import "openzeppelin-solidity/contracts/lifecycle/Destructible.sol";
 contract SimpleICOScheme is Upgradeable {
     using SafeMath for uint;
 
-
-    address avatarContractICO; // Avatar is a contract for users that want to send ether without calling a function.
-    uint totalEthRaised;
     bool public isHalted; // The admin of the ICO can halt the ICO at any time, and also resume it.
 
 
@@ -31,17 +26,9 @@ contract SimpleICOScheme is Upgradeable {
 
     address avatar;
 
-
-    // A mapping from the organization (Avatar) address to the saved data of the organization:
-    //mapping(address=>Organization) public organizationsICOInfo;
-
-
     event DonationReceived(address indexed organization, address indexed _beneficiary, uint _incomingEther, uint indexed _tokensAmount);
 
     function () public payable {
-        // Not to waste gas, if no value.
-        require(msg.value != 0);
-
         // Return ether if couldn't donate.
         donate(msg.sender);
     }
@@ -70,7 +57,7 @@ contract SimpleICOScheme is Upgradeable {
      * @return bool which represents a successful of the function
      */
     function isActive() public view returns(bool) {
-        if (totalEthRaised >= cap) {
+        if (this.balance >= cap) {
             return false;
         }
         if (block.number >= endBlock) {
@@ -89,8 +76,7 @@ contract SimpleICOScheme is Upgradeable {
      * @param _beneficiary The donator's address - which will receive the ICO's tokens.
      * @return uint number of tokens minted for the donation.
      */
-    function donate(address _beneficiary) public payable {
-
+    function donate(address _beneficiary) public payable {        
         // Check ICO is active:
         require(isActive(), "ICO must be active in order to donate");
 
@@ -103,16 +89,15 @@ contract SimpleICOScheme is Upgradeable {
         uint change;
 
         // Compute how much tokens to buy:
-        if ( msg.value > cap.sub(totalEthRaised) ) {
-            incomingEther = cap.sub(totalEthRaised);
+        if ( msg.value > cap.sub(this.balance) ) {
+            incomingEther = cap.sub(this.balance);
             change = (msg.value).sub(incomingEther);
         } else {
             incomingEther = msg.value;
         }
 
         uint tokens = incomingEther.mul(price);
-        // Update total raised, call event and return amount of tokens bought:
-        totalEthRaised += incomingEther;
+
         // Send ether to the defined address, mint, and send change to beneficiary:
         beneficiary.transfer(incomingEther);
 

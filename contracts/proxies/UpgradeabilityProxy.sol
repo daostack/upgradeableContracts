@@ -10,14 +10,12 @@ import './UpgradeabilityStorage.sol';
  */
 contract UpgradeabilityProxy is Proxy, UpgradeabilityStorage {
 
-    address public owner;
-
     /**
     * @dev Constructor function
     */
-    constructor(address _owner, address _version) public {
+    constructor(address _proxyOwner, address _version) public {
         _implementation = _version;
-        owner = _owner;
+        proxyOwner = _proxyOwner;
     }
 
     /**
@@ -25,7 +23,7 @@ contract UpgradeabilityProxy is Proxy, UpgradeabilityStorage {
     * @param _version representing the version name of the new implementation to be set
     */
     function upgradeTo(address _version) public {
-        require(msg.sender == owner);
+        require(msg.sender == proxyOwner);
         _implementation = _version;
     }
 

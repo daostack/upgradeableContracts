@@ -16,53 +16,68 @@ const Proxy = artifacts.require('./proxies/UpgradeabilityProxy.sol');
 var daoCreator;
 var testSetup = new helpers.TestSetup();
 
-const setupOrganization = async function (daoCreatorOwner,founderToken,founderReputation) {
-  var controllerCreator = await ControllerCreator.new({gas: constants.ARC_GAS_LIMIT});
-  daoCreator = await DaoCreator.new(controllerCreator.address,{gas:constants.ARC_GAS_LIMIT});
-  var org = await helpers.setupOrganization(daoCreator,daoCreatorOwner,founderToken,founderReputation);
+const setupOrganization = async function(daoCreatorOwner, founderToken, founderReputation) {
+  var controllerCreator = await ControllerCreator.new({
+    gas: constants.ARC_GAS_LIMIT
+  });
+  daoCreator = await DaoCreator.new(controllerCreator.address, {
+    gas: constants.ARC_GAS_LIMIT
+  });
+  var org = await helpers.setupOrganization(daoCreator, daoCreatorOwner, founderToken, founderReputation);
   return org;
 };
 
-const setup = async function (accounts) {
+const setup = async function(accounts) {
   testSetup.beneficiary = accounts[0];
   testSetup.fee = 10;
-  testSetup.standardTokenMock = await StandardTokenMock.new(accounts[1],100);
+  testSetup.standardTokenMock = await StandardTokenMock.new(accounts[1], 100);
   testSetup.org = await setupOrganization(accounts[0], 1000, 1000);
 };
 
-contract('Upgradeable', function (accounts) {
+contract('Upgradeable', function(accounts) {
 
-  it('should work', async function () {
+  it('should work', async function() {
     await setup(accounts);
     const impl_v1 = await SimpleICO.new();
     const impl_v2 = await SimpleICOV2.new();
 
     const factory = await Factory.new();
 
-     const {logs} = await factory.createProxy(
-       impl_v1.address,
-       10000,
-       1,
-       web3.eth.blockNumber,
-       web3.eth.blockNumber + 500,
-       testSetup.org.avatar.address,
-       accounts[0],
-       testSetup.org.avatar.address
-     );
+    const {
+      logs
+    } = await factory.createProxy(
+      impl_v1.address,
+      10000,
+      1,
+      web3.eth.blockNumber,
+      web3.eth.blockNumber + 500,
+      testSetup.org.avatar.address,
+      accounts[0],
+      testSetup.org.avatar.address
+    );
 
-    const {proxy} = logs.find(l => l.event === 'ProxyCreated').args;
-    
-    await daoCreator.setSchemes(testSetup.org.avatar.address,[proxy],[""],["0x00000000"]);
+    const {
+      proxy
+    } = logs.find(l => l.event === 'ProxyCreated').args;
 
-    await SimpleICO.at(proxy).sendTransaction({from:accounts[0], value: 2});
+
+    await daoCreator.setSchemes(testSetup.org.avatar.address, [proxy], [""], ["0x00000000"]);
+
+    await SimpleICO.at(proxy).donate(accounts[0], {
+      from: accounts[0],
+      value: 3
+    });
 
     await Proxy.at(proxy).upgradeTo(impl_v2.address)
 
-    await SimpleICOV2.at(proxy).donate(accounts[0], {from:accounts[0], value: 3});
+    await SimpleICOV2.at(proxy).sendTransaction({
+      from: accounts[0],
+      value: 2
+    });
 
     const balance = await testSetup.org.token.balanceOf(accounts[0]);
 
-    assert.equal(balance.toNumber(), 1005, "Balance of tokens should be 5");
+    assert.equal(balance.toNumber(), 1005, "Balance of tokens should be 1005");
   })
 
 })

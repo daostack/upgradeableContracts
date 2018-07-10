@@ -7,6 +7,8 @@ pragma solidity ^0.4.24;
  */
 contract UpgradeabilityStorage {
 
+    address public proxyOwner;
+
     // Address of the current implementation
     address internal _implementation;
 

@@ -8,7 +8,7 @@ const ControllerCreator = artifacts.require("./ControllerCreator.sol");
 const SimpleICO = artifacts.require('./SimpleICOScheme.sol');
 const SimpleICOV2 = artifacts.require('./SimpleICOSchemeV2Mock.sol');
 
-const Factory = artifacts.require('./proxies/SimpleICOFactory.sol');
+const SimpleICOFactory = artifacts.require('./proxies/SimpleICOFactory.sol');
 const Proxy = artifacts.require('./proxies/UpgradeabilityProxy.sol');
 
 
@@ -36,12 +36,12 @@ const setup = async function(accounts) {
 
 contract('Upgradeable', function(accounts) {
 
-  it('should work', async function() {
+  it('should mint 5 tokens to donator while updating the proxy implementation', async function() {
     await setup(accounts);
     const impl_v1 = await SimpleICO.new();
     const impl_v2 = await SimpleICOV2.new();
 
-    const factory = await Factory.new();
+    const factory = await SimpleICOFactory.new();
 
     const {
       logs
@@ -60,6 +60,7 @@ contract('Upgradeable', function(accounts) {
       proxy
     } = logs.find(l => l.event === 'ProxyCreated').args;
 
+    assert.equal(await Proxy.at(proxy).implementation(), impl_v1.address, "Implementation for the proxy should be version 1");
 
     await daoCreator.setSchemes(testSetup.org.avatar.address, [proxy], [""], ["0x00000000"]);
 
@@ -68,14 +69,28 @@ contract('Upgradeable', function(accounts) {
       value: 3
     });
 
+    var balance = await testSetup.org.token.balanceOf(accounts[0]);
+
+    assert.equal(balance.toNumber(), 1003, "Balance of tokens should be 1003");
+
     await Proxy.at(proxy).upgradeTo(impl_v2.address)
 
-    await SimpleICOV2.at(proxy).sendTransaction({
+    assert.equal(await Proxy.at(proxy).implementation(), impl_v2.address, "Implementation for the proxy should be version 2");
+
+    var donateLogs = (await SimpleICOV2.at(proxy).sendTransaction({
       from: accounts[0],
       value: 2
-    });
+    })).logs;
 
-    const balance = await testSetup.org.token.balanceOf(accounts[0]);
+    const {
+      donator,
+      _amount
+    } = donateLogs.find(l => l.event === 'NewDonator').args;
+
+    assert.equal(donator, accounts[0], "Donator address should be " + accounts[0] + " (the same as accounts[0])");
+    assert.equal(_amount.toNumber(), 2, "Amount donated should be 2");
+
+    balance = await testSetup.org.token.balanceOf(accounts[0]);
 
     assert.equal(balance.toNumber(), 1005, "Balance of tokens should be 1005");
   })

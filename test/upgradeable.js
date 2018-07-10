@@ -37,7 +37,9 @@ const setup = async function(accounts) {
 contract('Upgradeable', function(accounts) {
 
   it('should mint 5 tokens to donator while updating the proxy implementation', async function() {
+
     await setup(accounts);
+
     const impl_v1 = await SimpleICO.new();
     const impl_v2 = await SimpleICOV2.new();
 
@@ -73,7 +75,7 @@ contract('Upgradeable', function(accounts) {
 
     assert.equal(balance.toNumber(), 1003, "Balance of tokens should be 1003");
 
-    await Proxy.at(proxy).upgradeTo(impl_v2.address)
+    await Proxy.at(proxy).upgradeTo(impl_v2.address);
 
     assert.equal(await Proxy.at(proxy).implementation(), impl_v2.address, "Implementation for the proxy should be version 2");
 
@@ -93,6 +95,87 @@ contract('Upgradeable', function(accounts) {
     balance = await testSetup.org.token.balanceOf(accounts[0]);
 
     assert.equal(balance.toNumber(), 1005, "Balance of tokens should be 1005");
-  })
+  });
 
-})
+  it('upgrade proxy implementation from non-owner address should revert', async function() {
+
+    await setup(accounts);
+
+    const impl_v1 = await SimpleICO.new();
+    const impl_v2 = await SimpleICOV2.new();
+
+    const factory = await SimpleICOFactory.new();
+
+    const {
+      logs
+    } = await factory.createProxy(
+      impl_v1.address,
+      10000,
+      1,
+      web3.eth.blockNumber,
+      web3.eth.blockNumber + 500,
+      testSetup.org.avatar.address,
+      accounts[0],
+      testSetup.org.avatar.address
+    );
+
+    const {
+      proxy
+    } = logs.find(l => l.event === 'ProxyCreated').args;
+
+
+    try {
+      await Proxy.at(proxy).upgradeTo(impl_v2.address, {
+        from: accounts[1]
+      });
+      assert(false, "upgrade from non-owner address should revert");
+    } catch (ex) {
+      helpers.assertVMException(ex);
+    }
+  });
+
+  it('calling initialize after proxy deployment should revert', async function() {
+
+    await setup(accounts);
+
+    const impl_v1 = await SimpleICO.new();
+    const impl_v2 = await SimpleICOV2.new();
+
+    const factory = await SimpleICOFactory.new();
+
+    const {
+      logs
+    } = await factory.createProxy(
+      impl_v1.address,
+      10000,
+      1,
+      web3.eth.blockNumber,
+      web3.eth.blockNumber + 500,
+      testSetup.org.avatar.address,
+      accounts[0],
+      testSetup.org.avatar.address
+    );
+
+    const {
+      proxy
+    } = logs.find(l => l.event === 'ProxyCreated').args;
+
+
+    try {
+      await SimpleICO.at(proxy).initialize(
+        accounts[0],
+        10000,
+        1,
+        web3.eth.blockNumber,
+        web3.eth.blockNumber + 500,
+        testSetup.org.avatar.address,
+        accounts[0],
+        testSetup.org.avatar.address
+      );
+
+      assert(false, "calling initialize after proxy deployment should revert");
+    } catch (ex) {
+      helpers.assertVMException(ex);
+    }
+  });
+});

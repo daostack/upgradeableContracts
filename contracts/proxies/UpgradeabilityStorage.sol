@@ -12,6 +12,7 @@ contract UpgradeabilityStorage {
     // Address of the current implementation
     address internal _implementation;
 
+    bool isInitialized;
     /**
     * @dev Tells the address of the current implementation
     * @return address of the current implementation

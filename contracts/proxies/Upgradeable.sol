@@ -10,8 +10,6 @@ import './UpgradeabilityStorage.sol';
  */
 contract Upgradeable is UpgradeabilityStorage {
 
-    bool isInitialized;
-
     function initialize(address sender) public payable {
         require(!isInitialized);
         isInitialized = true;

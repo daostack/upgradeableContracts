@@ -123,7 +123,6 @@ contract('Upgradeable', function(accounts) {
       proxy
     } = logs.find(l => l.event === 'ProxyCreated').args;
 
-
     try {
       await Proxy.at(proxy).upgradeTo(impl_v2.address, {
         from: accounts[1]
@@ -159,7 +158,6 @@ contract('Upgradeable', function(accounts) {
     const {
       proxy
     } = logs.find(l => l.event === 'ProxyCreated').args;
-
 
     try {
       await SimpleICO.at(proxy).initialize(

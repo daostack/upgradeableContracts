@@ -8,7 +8,7 @@ const ControllerCreator = artifacts.require("./ControllerCreator.sol");
 const SimpleICO = artifacts.require('./SimpleICOScheme.sol');
 const SimpleICOV2 = artifacts.require('./SimpleICOSchemeV2Mock.sol');
 
-const SimpleICOFactory = artifacts.require('./proxies/SimpleICOFactory.sol');
+const Factory = artifacts.require('./proxies/Factory.sol');
 const Proxy = artifacts.require('./proxies/UpgradeabilityProxy.sol');
 
 
@@ -40,15 +40,7 @@ contract('Upgradeable', function(accounts) {
 
     await setup(accounts);
 
-    const impl_v1 = await SimpleICO.new();
-    const impl_v2 = await SimpleICOV2.new();
-
-    const factory = await SimpleICOFactory.new();
-
-    const {
-      logs
-    } = await factory.createProxy(
-      impl_v1.address,
+    const initData = helpers.encodeCall('initialize', ['uint', 'uint', 'uint', 'uint', 'address', 'address', 'address'], [
       10000,
       1,
       web3.eth.blockNumber,
@@ -56,6 +48,19 @@ contract('Upgradeable', function(accounts) {
       testSetup.org.avatar.address,
       accounts[0],
       testSetup.org.avatar.address
+    ]);
+
+    const impl_v1 = await SimpleICO.new();
+    const impl_v2 = await SimpleICOV2.new();
+
+    const factory = await Factory.new();
+
+    const {
+      logs
+    } = await factory.createProxy(
+      accounts[0],
+      impl_v1.address,
+      initData
     );
 
     const {
@@ -101,15 +106,7 @@ contract('Upgradeable', function(accounts) {
 
     await setup(accounts);
 
-    const impl_v1 = await SimpleICO.new();
-    const impl_v2 = await SimpleICOV2.new();
-
-    const factory = await SimpleICOFactory.new();
-
-    const {
-      logs
-    } = await factory.createProxy(
-      impl_v1.address,
+    const initData = helpers.encodeCall('initialize', ['uint', 'uint', 'uint', 'uint', 'address', 'address', 'address'], [
       10000,
       1,
       web3.eth.blockNumber,
@@ -117,6 +114,19 @@ contract('Upgradeable', function(accounts) {
       testSetup.org.avatar.address,
       accounts[0],
       testSetup.org.avatar.address
+    ]);
+
+    const impl_v1 = await SimpleICO.new();
+    const impl_v2 = await SimpleICOV2.new();
+
+    const factory = await Factory.new();
+
+    const {
+      logs
+    } = await factory.createProxy(
+      accounts[0],
+      impl_v1.address,
+      initData
     );
 
     const {
@@ -137,15 +147,7 @@ contract('Upgradeable', function(accounts) {
 
     await setup(accounts);
 
-    const impl_v1 = await SimpleICO.new();
-    const impl_v2 = await SimpleICOV2.new();
-
-    const factory = await SimpleICOFactory.new();
-
-    const {
-      logs
-    } = await factory.createProxy(
-      impl_v1.address,
+    const initData = helpers.encodeCall('initialize', ['uint', 'uint', 'uint', 'uint', 'address', 'address', 'address'], [
       10000,
       1,
       web3.eth.blockNumber,
@@ -153,6 +155,21 @@ contract('Upgradeable', function(accounts) {
       testSetup.org.avatar.address,
       accounts[0],
       testSetup.org.avatar.address
+    ]);
+
+    console.log();
+
+    const impl_v1 = await SimpleICO.new();
+    const impl_v2 = await SimpleICOV2.new();
+
+    const factory = await Factory.new();
+
+    const {
+      logs
+    } = await factory.createProxy(
+      accounts[0],
+      impl_v1.address,
+      initData
     );
 
     const {
@@ -160,16 +177,10 @@ contract('Upgradeable', function(accounts) {
     } = logs.find(l => l.event === 'ProxyCreated').args;
 
     try {
-      await SimpleICO.at(proxy).initialize(
-        accounts[0],
-        10000,
-        1,
-        web3.eth.blockNumber,
-        web3.eth.blockNumber + 500,
-        testSetup.org.avatar.address,
-        accounts[0],
-        testSetup.org.avatar.address
-      );
+      await SimpleICO.at(proxy).sendTransaction({
+          from: accounts[0],
+          data: initData
+        });
 
       assert(false, "calling initialize after proxy deployment should revert");
     } catch (ex) {

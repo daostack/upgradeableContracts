@@ -8,6 +8,7 @@ const Reputation = artifacts.require("./Reputation.sol");
 const AbsoluteVote = artifacts.require("./AbsoluteVote.sol");
 const constants = require('./constants');
 const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
+const abi = require('ethereumjs-abi');
 
 
 export const NULL_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -246,6 +247,13 @@ export const checkVotesStatus = async function(proposalId, _votesStatus,votingMa
       assert.equal(voteStatus, _votesStatus[i]);
   }
 };
+
+
+export function encodeCall(name, _arguments, values) {
+  const methodId = abi.methodID(name, _arguments).toString('hex');
+  const params = abi.rawEncode(_arguments, values).toString('hex');
+  return '0x' + methodId + params;
+}
 
 
 // Increases testrpc time by the passed duration in seconds

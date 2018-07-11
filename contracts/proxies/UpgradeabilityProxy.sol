@@ -27,4 +27,8 @@ contract UpgradeabilityProxy is Proxy, UpgradeabilityStorage {
         _implementation = _version;
     }
 
+    function transferProxyOwnership(address _proxyOwner) public {
+        require(msg.sender == proxyOwner);
+        proxyOwner = _proxyOwner;
+    }
 }

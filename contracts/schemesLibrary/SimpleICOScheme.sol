@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import '../proxies/Upgradeable.sol';
+import '../proxies/UpgradeabilityStorage.sol';
 import '../controller/Avatar.sol';
 import "../controller/ControllerInterface.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -10,7 +10,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
  * @title SimpleICO scheme.
  * @dev A universal scheme to allow organizations to open a simple ICO and get donations.
  */
-contract SimpleICOScheme is Upgradeable {
+contract SimpleICOScheme is UpgradeabilityStorage {
     using SafeMath for uint;
 
     bool public isHalted; // The admin of the ICO can halt the ICO at any time, and also resume it.
@@ -25,6 +25,8 @@ contract SimpleICOScheme is Upgradeable {
     address admin; // The admin can halt or resume ICO.
 
     address avatar;
+
+    bool isInitialized;
 
     event DonationReceived(address indexed organization, address indexed _beneficiary, uint _incomingEther, uint indexed _tokensAmount);
 
@@ -76,7 +78,7 @@ contract SimpleICOScheme is Upgradeable {
      * @param _beneficiary The donator's address - which will receive the ICO's tokens.
      * @return uint number of tokens minted for the donation.
      */
-    function donate(address _beneficiary) public payable {        
+    function donate(address _beneficiary) public payable {
         // Check ICO is active:
         require(isActive(), "ICO must be active in order to donate");
 
@@ -89,8 +91,8 @@ contract SimpleICOScheme is Upgradeable {
         uint change;
 
         // Compute how much tokens to buy:
-        if ( msg.value > cap.sub(this.balance) ) {
-            incomingEther = cap.sub(this.balance);
+        if ( msg.value > cap.sub(address(this).balance) ) {
+            incomingEther = cap.sub(address(this).balance);
             change = (msg.value).sub(incomingEther);
         } else {
             incomingEther = msg.value;
@@ -110,7 +112,6 @@ contract SimpleICOScheme is Upgradeable {
     }
 
     function initialize(
-        address sender,
         uint _cap,
         uint _price,
         uint _startBlock,
@@ -118,23 +119,11 @@ contract SimpleICOScheme is Upgradeable {
         address _beneficiary,
         address _admin,
         address _avatar
-        ) public payable
+        ) public
     {
-        super.initialize(sender);
-        _initialize(
-            _cap, _price, _startBlock, _endBlock, _beneficiary, _admin, _avatar);
-    }
+        require(!isInitialized);
 
-    function _initialize(
-        uint _cap,
-        uint _price,
-        uint _startBlock,
-        uint _endBlock,
-        address _beneficiary,
-        address _admin,
-        address _avatar)
-        internal
-    {
+        isInitialized = true;
         cap = _cap;
         price = _price; // Price represents Tokens per 1 Eth
         startBlock = _startBlock;

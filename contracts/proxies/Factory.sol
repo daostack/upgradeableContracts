@@ -1,11 +1,10 @@
 pragma solidity ^0.4.24;
 
-import './Upgradeable.sol';
 import './UpgradeabilityProxy.sol';
 
 
 /**
- * @title Factory
+ * @title SimpleICOFactory
  * @dev This contract works as a registry of versions, it holds the implementations for the registered versions.
  */
 contract Factory {
@@ -15,12 +14,12 @@ contract Factory {
 
     /**
     * @dev Creates an upgradeable proxy
-    * @param version representing the first version to be set for the proxy
+    * @param implementation representing the first implementation to be set for the proxy
     * @return address of the new proxy created
     */
-    function createProxy(address version) public payable returns (UpgradeabilityProxy) {
-        UpgradeabilityProxy proxy = new UpgradeabilityProxy(msg.sender, version);
-        Upgradeable(proxy).initialize.value(msg.value)(msg.sender);
+    function createProxy(address proxyOwner, address implementation, bytes data) public payable returns (UpgradeabilityProxy) {
+        UpgradeabilityProxy proxy = new UpgradeabilityProxy(proxyOwner, implementation);
+        require(address(proxy).call.value(msg.value)(data));
         emit ProxyCreated(proxy);
         return proxy;
     }
